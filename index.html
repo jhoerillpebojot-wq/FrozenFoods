@@ -114,7 +114,7 @@ const flat=v=>Object.values(v||{}).flatMap(o=>o&&o.status?[o]:Object.values(o||{
 const ND=()=>!AUTH&&(toast("Firebase is not set up yet. Paste your config in index.html."),true);
 const fe=e=>({"auth/too-many-requests":"Too many tries. Please wait and try again.","auth/requires-recent-login":"Please log out, log in again, then retry."}[e&&e.code]||"Something went wrong. Please try again.");
 async function loadUser(u){unsub.forEach(f=>f());unsub=[];ORD=[];OR=false;seen=null;PROF=null;ADMIN=false;me=null;
- if(u){const sub=p=>unsub.push(F.onValue(R(p),s=>{chk(flat(s.val()));ORD=flat(s.val()).sort((a,b)=>b.t-a.t);OR=true;rr()},()=>{}));
+ if(u){const sub=p=>unsub.push(F.onValue(R(p),s=>{chk(flat(s.val()));ORD=flat(s.val()).sort((a,b)=>ADMIN?a.t-b.t:b.t-a.t);OR=true;rr()},()=>{}));
   if(u.isAnonymous){PROF=Object.assign({u:"guest",pay:"COD"},_g("guest",{}));me="guest";sub("orders/"+u.uid)}
   else{const d=await F.get(R("users/"+u.uid));PROF=d.exists()?d.val():{u:u.email,name:"",mobile:"",addr:"",pay:"COD"};me=u.email;
    ADMIN=(await F.get(R("admins/"+u.uid))).exists();sub(ADMIN?"orders":"orders/"+u.uid)}}
