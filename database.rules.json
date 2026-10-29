@@ -1,0 +1,17 @@
+{
+  "rules": {
+    "shop": { "config": { ".read": true, ".write": "auth != null && root.child('admins').child(auth.uid).exists()" } },
+    "admins": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": false } },
+    "users": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+    "orders": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$oid": {
+          ".write": "auth != null && (root.child('admins').child(auth.uid).exists() || (auth.uid === $uid && ((!data.exists() && newData.child('status').val() === 'Pending' && newData.child('uid').val() === $uid) || (data.exists() && data.child('status').val() === 'Pending' && newData.child('status').val() === 'Cancelled' && newData.child('total').val() === data.child('total').val()))))",
+          ".validate": "newData.hasChildren(['uid','name','mobile','items','total','status','t'])"
+        }
+      }
+    }
+  }
+}
