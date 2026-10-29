@@ -96,14 +96,14 @@ function saveProd(){const pr={},sk={};P.forEach(p=>{p.p=Math.max(0,+$('#pp'+p.id
 function setV(){const c=cfg();return `<h2>Settings</h2><div class='card'><label>Delivery fee (pesos, 0 = seller confirms)</label><input id='sf' type='number' min='0' value='${c.fee}'><label>Minimum order (pesos, 0 = none)</label><input id='sm' type='number' min='0' value='${c.min}'><button class='b' style='margin-top:10px' onclick='saveCfg()'>Save</button></div><h3>Change admin password</h3><div class='card'><label>New password</label><input id='sp' type='password' autocomplete='new-password'><button class='b' style='margin-top:10px' onclick='chgPw()'>Change password</button></div>`}
 function saveCfg(){S.set('cfg',{fee:Math.max(0,+$('#sf').value||0),min:Math.max(0,+$('#sm').value||0)});toast('Saved.')}
 async function chgPw(){const pw=$('#sp').value;if(pw.length<6)return toast('Password needs 6+ characters.');const us=U();us.find(x=>x.u===me).p=await hs(pw);S.set('users',us);toast('Password changed.')}
-function render(){let r=route;if(r==="login"&&me&&me!=="guest")r=isAdm()?"admin":"shop";if(["admin","products","settings"].includes(r)&&!isAdm())r="login";if(r==="orders"&&!me)r="login";if(isAdm()&&["shop","cart","orders"].includes(r))r="admin";
-$("#app").innerHTML=head()+`<main class="wrap">${({shop:shopV,cart:cartV,login:loginV,orders:ordersV,admin:adminV,products:prodV,settings:setV}[r]||shopV)()}</main>`}
+function render(){if(CONF&&!ready){$("#app").innerHTML='<p class="mu" style="text-align:center;margin-top:30vh">Loading…</p>';return}let r=route;if(!me)r="login";if(r==="login"&&me&&me!=="guest")r=isAdm()?"admin":"shop";if(["admin","products","settings"].includes(r)&&!isAdm())r="login";if(r==="orders"&&!me)r="login";if(isAdm()&&["shop","cart","orders"].includes(r))r="admin";
+$("#app").innerHTML=(me?head():'<header><div class="wrap"><b>🧊 Frozen Products</b></div></header>')+`<main class="wrap">${({shop:shopV,cart:cartV,login:loginV,orders:ordersV,admin:adminV,products:prodV,settings:setV}[r]||shopV)()}</main>`}
 addEventListener("hashchange",()=>{route=location.hash.slice(1)||"shop";render()});
 
 
 /* ===== Firebase Realtime Database wiring: paste your web app config (Project settings > Your apps) ===== */
 const FB={apiKey:"AIzaSyBPEfrQoujtRjbHTjjfKnghBAlskHypNoQ",authDomain:"apps-6c3f0.firebaseapp.com",databaseURL:"https://apps-6c3f0-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"apps-6c3f0",appId:"1:173986891469:web:0d5a0bb30ccf17d1058b84"};
-let AUTH,DB,AU,F,ORD=[],CFG={},PROF=null,ADMIN=false,unsub=[];
+let ready=false;const CONF=!/PASTE/.test(JSON.stringify(FB));let AUTH,DB,AU,F,ORD=[],CFG={},PROF=null,ADMIN=false,unsub=[];
 const G="https://www.gstatic.com/firebasejs/10.12.2/";
 const _g=S.get;S.get=(k,d)=>k==="orders"?ORD:k==="stock"?Object.assign(Object.fromEntries(P.map(p=>[p.id,p.k])),CFG.stock||{}):k==="cfg"?{fee:CFG.fee||0,min:CFG.min||0}:k==="prices"?CFG.prices||{}:_g(k,d);
 const EM=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -146,8 +146,8 @@ async function setP(id){if(!ADMIN)return;const o=ORD.find(x=>x.id===id);try{awai
 async function saveProd(){if(!ADMIN)return;const pr={},sk={};P.forEach(p=>{pr[p.id]=Math.max(0,+$("#pp"+p.id).value||0);sk[p.id]=Math.max(0,+$("#ps"+p.id).value||0)});try{await F.update(R("shop/config"),{prices:pr,stock:sk});toast("Saved.")}catch(e){toast("Could not save.")}}
 async function saveCfg(){if(!ADMIN)return;try{await F.update(R("shop/config"),{fee:Math.max(0,+$("#sf").value||0),min:Math.max(0,+$("#sm").value||0)});toast("Saved.")}catch(e){toast("Could not save.")}}
 async function chgPw(){const pw=$("#sp").value;if(pw.length<6)return toast("Password needs 6+ characters.");try{await AU.updatePassword(AUTH.currentUser,pw);toast("Password changed.")}catch(e){toast(fe(e))}}
-(async()=>{route=location.hash.slice(1)||"shop";render();if(Object.values(FB).some(v=>String(v).startsWith("PASTE")))return;
+(async()=>{route=location.hash.slice(1)||"shop";setTimeout(()=>{if(!ready){ready=true;render()}},8000);render();if(Object.values(FB).some(v=>String(v).startsWith("PASTE")))return;
  const m=await Promise.all(["app","auth","database"].map(x=>import(G+"firebase-"+x+".js")));AU=m[1];F=m[2];const A=m[0].initializeApp(FB);AUTH=AU.getAuth(A);DB=F.getDatabase(A);
  F.onValue(R("shop/config"),s=>{CFG=s.val()||{};P.forEach(p=>{const q=(CFG.prices||{})[p.id];if(q!=null)p.p=q});render()},()=>{});
- AU.onAuthStateChanged(AUTH,u=>loadUser(u))})();
+ AU.onAuthStateChanged(AUTH,u=>loadUser(u).then(()=>{ready=true;render()}))})();
 </script></body></html>
